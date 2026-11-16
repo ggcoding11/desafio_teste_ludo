@@ -4,7 +4,7 @@ Lógica de uma partida de **Ludo para dois jogadores**, escrita em JavaScript e 
 
 ## Colaborador
 
-- Gustavo de Almeida Gomes
+- Gustavo de Almeida Gomes (24000271-2)
 
 ## Especificação do desafio
 
