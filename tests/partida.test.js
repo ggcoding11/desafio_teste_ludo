@@ -11,6 +11,14 @@ const {
   PECA_1_VERMELHA_JA_CHEGOU,
   VERMELHO_SEM_MOVIMENTO_POSSIVEL_TIRANDO_SEIS,
   PECAS_VERMELHAS_1_E_2_SE_ENCONTRAM_TIRANDO_TRES,
+  VERMELHA_CAPTURA_AMARELA_TIRANDO_TRES,
+  VERMELHA_CAPTURA_DUAS_AMARELAS_TIRANDO_TRES,
+  AMARELA_PROTEGIDA_NA_ESTRELA_ONDE_A_VERMELHA_CAI_TIRANDO_TRES,
+  AMARELA_PROTEGIDA_NA_PROPRIA_SAIDA_ONDE_A_VERMELHA_CAI_TIRANDO_TRES,
+  AMARELA_PROTEGIDA_NA_SAIDA_VERMELHA,
+  VERMELHA_ENTRA_NO_CORREDOR_TIRANDO_CINCO_SEM_CAPTURAR_A_AMARELA,
+  AMARELA_NAO_ALCANCA_VERMELHA_NO_CORREDOR_DEPOIS_QUE_O_VERMELHO_PASSA_A_VEZ,
+  AMARELA_CAPTURA_VERMELHA_DEPOIS_QUE_ELA_ANDA_DOIS,
 } = require('./helpers/cenarios');
 
 const { VERMELHO, AMARELO } = CORES;
@@ -324,6 +332,118 @@ describe('movimento das peças', () => {
     const partida = new Partida();
 
     expect(() => partida.moverPeca(0)).toThrow(RangeError);
+  });
+});
+
+describe('captura', () => {
+  test('parar na casa de uma peça adversária fora de casa segura a manda de volta para a base', () => {
+    const partida = criarPartida(VERMELHA_CAPTURA_AMARELA_TIRANDO_TRES, 3);
+    partida.lancarDado();
+
+    partida.moverPeca(1);
+
+    expect(partida.posicoesDasPecas(VERMELHO)).toEqual([4, BASE, BASE, BASE]);
+    expect(partida.posicoesDasPecas(AMARELO)).toEqual([BASE, BASE, BASE, BASE]);
+  });
+
+  test('a captura não dá jogada extra', () => {
+    const partida = criarPartida(VERMELHA_CAPTURA_AMARELA_TIRANDO_TRES, 3);
+    partida.lancarDado();
+
+    partida.moverPeca(1);
+
+    expect(partida.jogadorDaVez).toBe(AMARELO);
+  });
+
+  test('todas as peças adversárias da casa voltam para a base; as outras ficam onde estão', () => {
+    const partida = criarPartida(VERMELHA_CAPTURA_DUAS_AMARELAS_TIRANDO_TRES, 3);
+    partida.lancarDado();
+
+    partida.moverPeca(1);
+
+    expect(partida.posicoesDasPecas(AMARELO)).toEqual([BASE, BASE, 10, BASE]);
+  });
+
+  test('passar por cima de uma peça adversária não a captura', () => {
+    const partida = criarPartida(VERMELHA_CAPTURA_AMARELA_TIRANDO_TRES, 5);
+    partida.lancarDado();
+
+    partida.moverPeca(1);
+
+    expect(partida.posicoesDasPecas(VERMELHO)).toEqual([6, BASE, BASE, BASE]);
+    expect(partida.posicoesDasPecas(AMARELO)).toEqual([30, BASE, BASE, BASE]);
+  });
+
+  test('a peça amarela também captura a vermelha', () => {
+    const partida = criarPartida(AMARELA_CAPTURA_VERMELHA_DEPOIS_QUE_ELA_ANDA_DOIS, 2, 4);
+    partida.lancarDado();
+    partida.moverPeca(1);
+    partida.lancarDado();
+
+    partida.moverPeca(1);
+
+    expect(partida.posicoesDasPecas(AMARELO)).toEqual([6, BASE, BASE, BASE]);
+    expect(partida.posicoesDasPecas(VERMELHO)).toEqual([BASE, BASE, BASE, BASE]);
+  });
+
+  test.each([
+    [
+      'numa estrela',
+      AMARELA_PROTEGIDA_NA_ESTRELA_ONDE_A_VERMELHA_CAI_TIRANDO_TRES,
+      3,
+      [8, BASE, BASE, BASE],
+      [34, BASE, BASE, BASE],
+    ],
+    [
+      'na própria casa de saída',
+      AMARELA_PROTEGIDA_NA_PROPRIA_SAIDA_ONDE_A_VERMELHA_CAI_TIRANDO_TRES,
+      3,
+      [26, BASE, BASE, BASE],
+      [SAIDA, BASE, BASE, BASE],
+    ],
+    [
+      'na casa de saída do vermelho, quando a vermelha sai da base',
+      AMARELA_PROTEGIDA_NA_SAIDA_VERMELHA,
+      6,
+      [SAIDA, BASE, BASE, BASE],
+      [26, BASE, BASE, BASE],
+    ],
+  ])(
+    'a peça adversária %s está protegida e as duas dividem a casa',
+    (_casaSegura, cenario, valorDoDado, vermelhoEsperado, amareloEsperado) => {
+      const partida = criarPartida(cenario, valorDoDado);
+      partida.lancarDado();
+
+      partida.moverPeca(1);
+
+      expect(partida.posicoesDasPecas(VERMELHO)).toEqual(vermelhoEsperado);
+      expect(partida.posicoesDasPecas(AMARELO)).toEqual(amareloEsperado);
+    },
+  );
+
+  test('a peça que entra no próprio corredor final não captura ninguém na trilha', () => {
+    const partida = criarPartida(VERMELHA_ENTRA_NO_CORREDOR_TIRANDO_CINCO_SEM_CAPTURAR_A_AMARELA, 5);
+    partida.lancarDado();
+
+    partida.moverPeca(1);
+
+    expect(partida.posicoesDasPecas(VERMELHO)).toEqual([53, BASE, BASE, BASE]);
+    expect(partida.posicoesDasPecas(AMARELO)).toEqual([27, BASE, BASE, BASE]);
+  });
+
+  test('a peça no corredor final não pode ser capturada', () => {
+    const partida = criarPartida(
+      AMARELA_NAO_ALCANCA_VERMELHA_NO_CORREDOR_DEPOIS_QUE_O_VERMELHO_PASSA_A_VEZ,
+      6,
+      3,
+    );
+    partida.lancarDado();
+    partida.lancarDado();
+
+    partida.moverPeca(1);
+
+    expect(partida.posicoesDasPecas(AMARELO)).toEqual([25, BASE, BASE, BASE]);
+    expect(partida.posicoesDasPecas(VERMELHO)).toEqual([51, CHEGADA, CHEGADA, CHEGADA]);
   });
 });
 

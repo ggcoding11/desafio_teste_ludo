@@ -2,7 +2,15 @@ const { ORDEM_DE_JOGO, PECAS_POR_JOGADOR, POSICOES, DADO } = require('./constant
 const { ErroDeRegra } = require('./erros');
 const { validarInteiroNoIntervalo } = require('./validacoes');
 const { lancarDado: lancarDadoComMathRandom, validarValorDoDado } = require('./dado');
-const { validarCor, validarPosicao, podeMover, calcularDestino } = require('./tabuleiro');
+const {
+  validarCor,
+  validarPosicao,
+  estaNaTrilha,
+  calcularCasaDaTrilha,
+  ehCasaSegura,
+  podeMover,
+  calcularDestino,
+} = require('./tabuleiro');
 
 function criarPosicoesNaBase() {
   const posicoes = {};
@@ -22,6 +30,10 @@ function copiarPosicoes(posicoes) {
 
 function todasAsPecasChegaram(posicoesDaCor) {
   return posicoesDaCor.every((posicao) => posicao === POSICOES.CHEGADA);
+}
+
+function ocupaACasaDaTrilha(cor, posicao, casaDaTrilha) {
+  return estaNaTrilha(posicao) && calcularCasaDaTrilha(cor, posicao) === casaDaTrilha;
 }
 
 function validarPosicoesDaCor(cor, posicoesDaCor) {
@@ -132,7 +144,24 @@ class Partida {
     const indiceDaPeca = numeroDaPeca - 1;
     const destino = calcularDestino(this.#posicoes[cor][indiceDaPeca], this.#valorDoDado);
     this.#posicoes[cor][indiceDaPeca] = destino;
+    this.#capturarPecasAdversarias(cor, destino);
     this.#concluirJogada(cor);
+  }
+
+  #capturarPecasAdversarias(corQueMoveu, destino) {
+    if (!estaNaTrilha(destino)) {
+      return;
+    }
+    const casaDeDestino = calcularCasaDaTrilha(corQueMoveu, destino);
+    if (ehCasaSegura(casaDeDestino)) {
+      return;
+    }
+    const coresAdversarias = ORDEM_DE_JOGO.filter((cor) => cor !== corQueMoveu);
+    for (const corAdversaria of coresAdversarias) {
+      this.#posicoes[corAdversaria] = this.#posicoes[corAdversaria].map((posicao) =>
+        ocupaACasaDaTrilha(corAdversaria, posicao, casaDeDestino) ? POSICOES.BASE : posicao,
+      );
+    }
   }
 
   #corDaVez() {
