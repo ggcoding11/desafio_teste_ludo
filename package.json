@@ -1,0 +1,19 @@
+{
+  "name": "desafio_teste_ludo",
+  "version": "1.0.0",
+  "description": "Casos de teste em JavaScript, com Jest, para uma partida de Ludo entre dois jogadores",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "test": "jest",
+    "test:coverage": "jest --coverage"
+  },
+  "jest": {
+    "collectCoverageFrom": [
+      "src/**/*.js"
+    ]
+  },
+  "devDependencies": {
+    "jest": "^30.5.2"
+  }
+}
